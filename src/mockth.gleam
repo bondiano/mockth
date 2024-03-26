@@ -5,14 +5,29 @@ import gleam/string
 import gleam/list
 
 @external(erlang, "meck", "expect")
+fn do_expect0(module: Atom, function: Atom, fun: fn() -> value) -> Atom
+
+/// Mock a function with zero argument.
+/// The function `fun` should return the value that the function will return when called.
+pub fn expect0(
+  module module: String,
+  function function: String,
+  with fun: fn() -> value,
+) -> Result(Bool, String) {
+  use #(module, function) <- result.then(load_expect_atoms(module, function))
+
+  do_expect0(module, function, fun)
+  |> is_ok_atom
+}
+
+@external(erlang, "meck", "expect")
 fn do_expect1(module: Atom, function: Atom, fun: fn(a) -> value) -> Atom
 
 /// Mock a function with 1 argument
-///
 /// ```gleam
 /// pub fn expect1_test() {
 ///  let assert Ok(_) =
-///    mockth.expect1("gleam/function", "identity", fn(_args) { "hello" })
+///    mockth.expect1("gleam/function", "identity", fn(_) { "hello" })
 ///
 ///  mockth.validate("gleam/function")
 ///  |> should.equal(True)
@@ -24,9 +39,9 @@ fn do_expect1(module: Atom, function: Atom, fun: fn(a) -> value) -> Atom
 ///  |> should.equal("hello")
 /// }
 pub fn expect1(
-  module: String,
-  function: String,
-  fun: fn(a) -> value,
+  module module: String,
+  function function: String,
+  with fun: fn(a) -> value,
 ) -> Result(Bool, String) {
   use #(module, function) <- result.then(load_expect_atoms(module, function))
 
@@ -39,9 +54,9 @@ fn do_expect2(module: Atom, function: Atom, fun: fn(a, b) -> value) -> Atom
 
 /// Mock a function with 2 arguments
 pub fn expect2(
-  module: String,
-  function: String,
-  fun: fn(a, b) -> value,
+  module module: String,
+  function function: String,
+  with fun: fn(a, b) -> value,
 ) -> Result(Bool, String) {
   use #(module, function) <- result.then(load_expect_atoms(module, function))
 
@@ -54,9 +69,9 @@ fn do_expect3(module: Atom, function: Atom, fun: fn(a, b, c) -> value) -> Atom
 
 /// Mock a function with 3 arguments
 pub fn expect3(
-  module: String,
-  function: String,
-  fun: fn(a, b, c) -> value,
+  module module: String,
+  function function: String,
+  with fun: fn(a, b, c) -> value,
 ) -> Result(Bool, String) {
   use #(module, function) <- result.then(load_expect_atoms(module, function))
 
@@ -73,9 +88,9 @@ fn do_expect4(
 
 /// Mock a function with 4 arguments
 pub fn expect4(
-  module: String,
-  function: String,
-  fun: fn(a, b, c, d) -> value,
+  module module: String,
+  function function: String,
+  with fun: fn(a, b, c, d) -> value,
 ) -> Result(Bool, String) {
   use #(module, function) <- result.then(load_expect_atoms(module, function))
 
@@ -92,9 +107,9 @@ fn do_expect5(
 
 /// Mock a function with 5 arguments
 pub fn expect5(
-  module: String,
-  function: String,
-  fun: fn(a, b, c, d, e) -> value,
+  module module: String,
+  function function: String,
+  with fun: fn(a, b, c, d, e) -> value,
 ) -> Result(Bool, String) {
   use #(module, function) <- result.then(load_expect_atoms(module, function))
 
