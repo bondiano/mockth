@@ -1,33 +1,25 @@
 /// A module for mocking functions in Erlang modules - wrapper around [meck](https://github.com/eproxus/meck).
 import gleam/erlang/atom.{type Atom}
+import gleam/erlang/process.{type Pid}
+import gleam/dynamic.{type Dynamic}
 import gleam/result
 import gleam/string
 import gleam/list
 
-@external(erlang, "meck", "expect")
-fn do_expect0(module: Atom, function: Atom, fun: fn() -> value) -> Atom
-
-/// Mock a function with zero argument.
-/// The function `fun` should return the value that the function will return when called.
-pub fn expect0(
-  module module: String,
-  function function: String,
-  with fun: fn() -> value,
-) -> Result(Bool, String) {
-  use #(module, function) <- result.then(load_expect_atoms(module, function))
-
-  do_expect0(module, function, fun)
-  |> is_ok_atom
+pub type History {
+  /// Module, function and arguments that the mock module got called with.
+  History(pid: Pid, module: String, function: String, arguments: List(Dynamic))
 }
 
 @external(erlang, "meck", "expect")
-fn do_expect1(module: Atom, function: Atom, fun: fn(a) -> value) -> Atom
+fn do_expect(module: Atom, function: Atom, fun: fun) -> Atom
 
-/// Mock a function with 1 argument
+/// Mock a function.
+/// The function `fun` should return the value that the function will return when called.
 /// ```gleam
 /// pub fn expect1_test() {
 ///  let assert Ok(_) =
-///    mockth.expect1("gleam/function", "identity", fn(_) { "hello" })
+///    mockth.expect("gleam/function", "identity", fn(_) { "hello" })
 ///
 ///  mockth.validate("gleam/function")
 ///  |> should.equal(True)
@@ -38,82 +30,14 @@ fn do_expect1(module: Atom, function: Atom, fun: fn(a) -> value) -> Atom
 ///  function.identity("world")
 ///  |> should.equal("hello")
 /// }
-pub fn expect1(
+pub fn expect(
   module module: String,
   function function: String,
-  with fun: fn(a) -> value,
+  with fun: fun,
 ) -> Result(Bool, String) {
   use #(module, function) <- result.then(load_expect_atoms(module, function))
 
-  do_expect1(module, function, fun)
-  |> is_ok_atom
-}
-
-@external(erlang, "meck", "expect")
-fn do_expect2(module: Atom, function: Atom, fun: fn(a, b) -> value) -> Atom
-
-/// Mock a function with 2 arguments
-pub fn expect2(
-  module module: String,
-  function function: String,
-  with fun: fn(a, b) -> value,
-) -> Result(Bool, String) {
-  use #(module, function) <- result.then(load_expect_atoms(module, function))
-
-  do_expect2(module, function, fun)
-  |> is_ok_atom
-}
-
-@external(erlang, "meck", "expect")
-fn do_expect3(module: Atom, function: Atom, fun: fn(a, b, c) -> value) -> Atom
-
-/// Mock a function with 3 arguments
-pub fn expect3(
-  module module: String,
-  function function: String,
-  with fun: fn(a, b, c) -> value,
-) -> Result(Bool, String) {
-  use #(module, function) <- result.then(load_expect_atoms(module, function))
-
-  do_expect3(module, function, fun)
-  |> is_ok_atom
-}
-
-@external(erlang, "meck", "expect")
-fn do_expect4(
-  module: Atom,
-  function: Atom,
-  fun: fn(a, b, c, d) -> value,
-) -> Atom
-
-/// Mock a function with 4 arguments
-pub fn expect4(
-  module module: String,
-  function function: String,
-  with fun: fn(a, b, c, d) -> value,
-) -> Result(Bool, String) {
-  use #(module, function) <- result.then(load_expect_atoms(module, function))
-
-  do_expect4(module, function, fun)
-  |> is_ok_atom
-}
-
-@external(erlang, "meck", "expect")
-fn do_expect5(
-  module: Atom,
-  function: Atom,
-  fun: fn(a, b, c, d, e) -> value,
-) -> Atom
-
-/// Mock a function with 5 arguments
-pub fn expect5(
-  module module: String,
-  function function: String,
-  with fun: fn(a, b, c, d, e) -> value,
-) -> Result(Bool, String) {
-  use #(module, function) <- result.then(load_expect_atoms(module, function))
-
-  do_expect5(module, function, fun)
+  do_expect(module, function, fun)
   |> is_ok_atom
 }
 
@@ -171,10 +95,47 @@ pub fn mocked() -> List(String) {
   |> module_atoms_to_strings
 }
 
+type Mfa =
+  #(Atom, Atom, List(Dynamic))
+
+@external(erlang, "meck", "history")
+fn do_history(module: Atom) -> List(#(Pid, Mfa, result))
+
+/// Returns the history of calls to the mocked module.
+/// Dont support exception handling.
+pub fn history(module: String) -> Result(List(History), String) {
+  module
+  |> to_module_atom
+  |> result.map(fn(module) { do_history(module) })
+  |> result.then(fn(histories) {
+    histories
+    |> list.map(fn(histoy) {
+      let #(pid, mfa, _result) = histoy
+      let #(module, function, arguments) = mfa
+
+      let module = module_atom_to_string(module)
+      let function = atom.to_string(function)
+
+      History(
+        pid: pid,
+        module: module,
+        function: function,
+        arguments: arguments,
+      )
+    })
+    |> Ok
+  })
+}
+
+fn module_atom_to_string(module: Atom) -> String {
+  module
+  |> atom.to_string
+  |> string.replace("@", "/")
+}
+
 fn module_atoms_to_strings(module_atoms: List(Atom)) -> List(String) {
   module_atoms
-  |> list.map(atom.to_string)
-  |> list.map(string.replace(_, "@", "/"))
+  |> list.map(module_atom_to_string)
 }
 
 fn is_ok_atom(a: Atom) -> Result(Bool, String) {

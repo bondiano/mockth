@@ -3,7 +3,7 @@
 [![Package Version](https://img.shields.io/hexpm/v/mockth)](https://hex.pm/packages/mockth)
 [![Hex Docs](https://img.shields.io/badge/hex-docs-ffaff3)](https://hexdocs.pm/mockth/)
 
-Gleam modules mocking library. This is simple wrapper around Erlang [meck](https://github.com/eproxus/meck) library.
+Gleam modules mocking library. This is a simple wrapper around Erlang [Meck](https://github.com/eproxus/meck) library.
 
 ```sh
 gleam add mockth
