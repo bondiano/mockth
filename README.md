@@ -25,13 +25,13 @@ pub fn main() {
 
 pub fn expect1_test() {
   let assert Ok(_) =
-    mockth.expect1("gleam/function", "identity", fn(_) { "hello" })
+    mockth.expect1("gleam@function", "identity", fn(_) { "hello" })
 
-  mockth.validate("gleam/function")
+  mockth.validate("gleam@function")
   |> should.equal(True)
 
   mockth.mocked()
-  |> should.equal(["gleam/function"])
+  |> should.equal(["gleam@function"])
 
   function.identity("world")
   |> should.equal("hello")

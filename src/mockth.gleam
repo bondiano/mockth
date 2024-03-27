@@ -3,7 +3,6 @@ import gleam/erlang/atom.{type Atom}
 import gleam/erlang/process.{type Pid}
 import gleam/dynamic.{type Dynamic}
 import gleam/result
-import gleam/string
 import gleam/list
 
 pub type History {
@@ -19,13 +18,13 @@ fn do_expect(module: Atom, function: Atom, fun: fun) -> Atom
 /// ```gleam
 /// pub fn expect1_test() {
 ///  let assert Ok(_) =
-///    mockth.expect("gleam/function", "identity", fn(_) { "hello" })
+///    mockth.expect("gleam@function", "identity", fn(_) { "hello" })
 ///
-///  mockth.validate("gleam/function")
+///  mockth.validate("gleam@function")
 ///  |> should.equal(True)
 ///
 ///  mockth.mocked()
-///  |> should.equal(["gleam/function"])
+///  |> should.equal(["gleam@function"])
 ///
 ///  function.identity("world")
 ///  |> should.equal("hello")
@@ -113,7 +112,7 @@ pub fn history(module: String) -> Result(List(History), String) {
       let #(pid, mfa, _result) = histoy
       let #(module, function, arguments) = mfa
 
-      let module = module_atom_to_string(module)
+      let module = atom.to_string(module)
       let function = atom.to_string(function)
 
       History(
@@ -127,15 +126,9 @@ pub fn history(module: String) -> Result(List(History), String) {
   })
 }
 
-fn module_atom_to_string(module: Atom) -> String {
-  module
-  |> atom.to_string
-  |> string.replace("@", "/")
-}
-
 fn module_atoms_to_strings(module_atoms: List(Atom)) -> List(String) {
   module_atoms
-  |> list.map(module_atom_to_string)
+  |> list.map(atom.to_string)
 }
 
 fn is_ok_atom(a: Atom) -> Result(Bool, String) {
@@ -154,11 +147,10 @@ fn load_expect_atoms(
   module: String,
   function: String,
 ) -> Result(#(Atom, Atom), String) {
-  to_module_atom(module)
-  |> result.then(fn(module) {
-    to_function_atom(function)
-    |> result.map(fn(function) { #(module, function) })
-  })
+  use module <- result.then(to_module_atom(module))
+  use function <- result.map(to_function_atom(function))
+
+  #(module, function)
 }
 
 fn to_function_atom(function: String) -> Result(Atom, String) {
@@ -167,7 +159,6 @@ fn to_function_atom(function: String) -> Result(Atom, String) {
 }
 
 fn to_module_atom(module: String) -> Result(Atom, String) {
-  let module = string.replace(module, "/", "@")
   atom.from_string(module)
   |> result.map_error(fn(_) { "Failed to find module " <> module })
 }
