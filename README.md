@@ -23,9 +23,9 @@ pub fn main() {
   gleeunit.main()
 }
 
-pub fn expect1_test() {
+pub fn expect_test() {
   let assert Ok(_) =
-    mockth.expect1("gleam@function", "identity", fn(_) { "hello" })
+    mockth.expect("gleam@function", "identity", fn(_) { "hello" })
 
   mockth.validate("gleam@function")
   |> should.equal(True)
