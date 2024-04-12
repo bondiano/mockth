@@ -22,3 +22,23 @@ pub fn expect_test() {
 
   mockth.unload_all()
 }
+
+pub fn with_mock_test() {
+  use _mock <- mockth.with_mock(
+    module: "gleam@function",
+    function: "identity",
+    replacement: fn(_) { "hello" },
+  )
+
+  function.identity("world")
+  |> should.equal("hello")
+}
+
+pub fn with_mock_assert_unload_test() {
+  mockth.with_mock("gleam@function", "identity", fn(_) { "hello" }, fn(_) {
+    Nil
+  })
+
+  mockth.mocked()
+  |> should.equal([])
+}

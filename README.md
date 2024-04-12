@@ -44,6 +44,25 @@ Don't forget to unload all mocks after each test case.
 
 Further documentation can be found at <https://hexdocs.pm/mockth>.
 
+### With `use` sugar
+The `with_mock` function is available to use mockth in your tests with the `use` sugar. It performs all steps from the example above (mock, validate, assert module is mocked), and even unloads all mocks after the test function finishes.
+
+```gleam
+ pub fn with_mock_test() {
+  use mock <- mockth.with_mock(
+    module: "gleam@function",
+    function: "identity",
+    replacement: fn(_) { "hello" },
+  )
+
+  function.identity("world")
+  |> should.equal("hello")
+
+  // the mocked module is available here as `mocks`
+  // for example to be able to call `mockth.history` with it.
+}
+```
+
 ## Development
 
 ```sh
