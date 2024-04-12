@@ -4,6 +4,7 @@ import gleam/erlang/process.{type Pid}
 import gleam/dynamic.{type Dynamic}
 import gleam/result
 import gleam/list
+import gleeunit/should
 
 pub type History {
   /// Module, function and arguments that the mock module got called with.
@@ -124,6 +125,41 @@ pub fn history(module: String) -> Result(List(History), String) {
     })
     |> Ok
   })
+}
+
+/// Utility function to set up mocks with the `use` sugar.
+/// ```gleam
+///  pub fn with_mock_test() {
+///   use mock <- mockth.with_mock(
+///     module: "gleam@function",
+///     function: "identity",
+///     replacement: fn(_) { "hello" },
+///   )
+/// 
+///   function.identity("world")
+///   |> should.equal("hello")
+/// 
+///   // the mocked module is available here as `mocks`
+///   // for example to be able to call `mockth.history` with it.
+/// }
+pub fn with_mock(
+  module module: String,
+  function function: String,
+  replacement fun: a,
+  testcase f: fn(String) -> b,
+) {
+  let assert Ok(_) = expect(module, function, fun)
+
+  validate(module)
+  |> should.be_true
+
+  mocked()
+  |> list.contains(module)
+  |> should.be_true
+
+  f(module)
+
+  unload_all()
 }
 
 fn module_atoms_to_strings(module_atoms: List(Atom)) -> List(String) {

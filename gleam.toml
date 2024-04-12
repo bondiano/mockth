@@ -8,6 +8,4 @@ repository = { type = "github", user = "bondiano", repo = "mockth" }
 gleam_stdlib = "~> 0.34 or ~> 1.0"
 meck = "~> 0.9"
 gleam_erlang = "~> 0.25"
-
-[dev-dependencies]
 gleeunit = "~> 1.0"
