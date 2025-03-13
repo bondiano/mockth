@@ -1,6 +1,6 @@
+import gleam/function
 import gleeunit
 import gleeunit/should
-import gleam/function
 import mockth
 
 pub fn main() {
