@@ -1,14 +1,21 @@
-/// A module for mocking functions in Erlang modules - wrapper around [meck](https://github.com/eproxus/meck).
+//// A module for mocking functions in Erlang modules - wrapper around [meck](https://github.com/eproxus/meck).
+
+import gleam/dynamic.{type Dynamic}
 import gleam/erlang/atom.{type Atom}
 import gleam/erlang/process.{type Pid}
-import gleam/dynamic.{type Dynamic}
-import gleam/result
 import gleam/list
+import gleam/result
 import gleeunit/should
 
 pub type History {
   /// Module, function and arguments that the mock module got called with.
   History(pid: Pid, module: String, function: String, arguments: List(Dynamic))
+}
+
+pub type MockError {
+  NoFunctionError(function: String)
+  NoModuleError(module: String)
+  NoExpectError
 }
 
 @external(erlang, "meck", "expect")
@@ -34,11 +41,11 @@ pub fn expect(
   module module: String,
   function function: String,
   with fun: fun,
-) -> Result(Bool, String) {
+) -> Result(Bool, MockError) {
   use #(module, function) <- result.then(load_expect_atoms(module, function))
 
   do_expect(module, function, fun)
-  |> is_ok_atom
+  |> is_ok_atom()
 }
 
 @external(erlang, "meck", "validate")
@@ -55,7 +62,7 @@ fn do_validate(module: Atom) -> Bool
 /// - When you didn't call a function
 /// - When you called a function with the wrong number of arguments (undef)
 /// - When you called an undefined function (undef)
-pub fn validate(module: String) -> Bool {
+pub fn validate(module module: String) -> Bool {
   case to_module_atom(module) {
     Ok(module) -> do_validate(module)
     Error(_) -> False
@@ -69,7 +76,7 @@ fn do_unload_all() -> List(Atom)
 /// Unloads all mocked modules from memory.
 pub fn unload_all() -> List(String) {
   do_unload_all()
-  |> module_atoms_to_strings
+  |> module_atoms_to_strings()
 }
 
 @external(erlang, "meck", "unload")
@@ -77,12 +84,12 @@ fn do_unload(module: Atom) -> Atom
 
 /// Unload a mocked module or a list of mocked modules.
 /// This will purge and delete the module(s) from the Erlang virtual machine. If the mocked module(s) replaced an existing module, this module will still be in the Erlang load path and can be loaded manually or when called.
-pub fn unload(module: String) -> Result(Bool, String) {
+pub fn unload(module: String) -> Result(Bool, MockError) {
   module
   |> to_module_atom
   |> result.then(fn(module) {
     do_unload(module)
-    |> is_ok_atom
+    |> is_ok_atom()
   })
 }
 
@@ -92,7 +99,7 @@ fn do_mocked() -> List(Atom)
 /// Returns the currently mocked modules.
 pub fn mocked() -> List(String) {
   do_mocked()
-  |> module_atoms_to_strings
+  |> module_atoms_to_strings()
 }
 
 type Mfa =
@@ -102,8 +109,8 @@ type Mfa =
 fn do_history(module: Atom) -> List(#(Pid, Mfa, result))
 
 /// Returns the history of calls to the mocked module.
-/// Dont support exception handling.
-pub fn history(module: String) -> Result(List(History), String) {
+/// Don't support exception handling.
+pub fn history(module: String) -> Result(List(History), MockError) {
   module
   |> to_module_atom
   |> result.map(fn(module) { do_history(module) })
@@ -135,13 +142,14 @@ pub fn history(module: String) -> Result(List(History), String) {
 ///     function: "identity",
 ///     replacement: fn(_) { "hello" },
 ///   )
-/// 
+///
 ///   function.identity("world")
 ///   |> should.equal("hello")
-/// 
+///
 ///   // the mocked module is available here as `mocks`
 ///   // for example to be able to call `mockth.history` with it.
 /// }
+/// ```
 pub fn with_mock(
   module module: String,
   function function: String,
@@ -151,11 +159,11 @@ pub fn with_mock(
   let assert Ok(_) = expect(module, function, fun)
 
   validate(module)
-  |> should.be_true
+  |> should.be_true()
 
   mocked()
   |> list.contains(module)
-  |> should.be_true
+  |> should.be_true()
 
   f(module)
 
@@ -167,34 +175,34 @@ fn module_atoms_to_strings(module_atoms: List(Atom)) -> List(String) {
   |> list.map(atom.to_string)
 }
 
-fn is_ok_atom(a: Atom) -> Result(Bool, String) {
+fn is_ok_atom(a: Atom) -> Result(Bool, MockError) {
   let ok = atom.from_string("ok")
   case ok {
     Ok(ok) ->
       case ok == a {
         True -> Ok(True)
-        False -> Error("Failed to expect")
+        False -> Error(NoExpectError)
       }
-    Error(_) -> Error("Failed to expect")
+    Error(_) -> Error(NoExpectError)
   }
 }
 
 fn load_expect_atoms(
   module: String,
   function: String,
-) -> Result(#(Atom, Atom), String) {
+) -> Result(#(Atom, Atom), MockError) {
   use module <- result.then(to_module_atom(module))
   use function <- result.map(to_function_atom(function))
 
   #(module, function)
 }
 
-fn to_function_atom(function: String) -> Result(Atom, String) {
+fn to_function_atom(function: String) -> Result(Atom, MockError) {
   atom.from_string(function)
-  |> result.map_error(fn(_) { "Failed to find function " <> function })
+  |> result.map_error(fn(_) { NoFunctionError(function) })
 }
 
-fn to_module_atom(module: String) -> Result(Atom, String) {
+fn to_module_atom(module: String) -> Result(Atom, MockError) {
   atom.from_string(module)
-  |> result.map_error(fn(_) { "Failed to find module " <> module })
+  |> result.map_error(fn(_) { NoModuleError(module) })
 }

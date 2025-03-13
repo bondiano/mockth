@@ -1,4 +1,4 @@
-name: test
+name: check
 
 on:
   push:
@@ -11,14 +11,18 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: erlef/setup-beam@v1
         with:
-          otp-version: "26.0.2"
-          gleam-version: "1.0.0"
-          rebar3-version: "3"
+          otp-version: "27.0"
+          gleam-version: "1.9.1"
+          rebar3-version: "3.23.0"
+
+      - name: Install Dependencies
+        run: gleam deps download
+
+      - name: Test
+        run: gleam test
+
       - name: Check Format
         run: gleam format --check src test
-      - run: gleam deps download
-      - run: gleam test
-      - run: gleam format --check src test
