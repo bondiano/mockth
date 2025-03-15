@@ -21,6 +21,9 @@ pub fn expect_test() {
   |> should.equal("hello")
 
   mockth.unload_all()
+
+  function.identity("world")
+  |> should.equal("world")
 }
 
 pub fn with_mock_test() {
@@ -41,4 +44,9 @@ pub fn with_mock_assert_unload_test() {
 
   mockth.mocked()
   |> should.equal([])
+}
+
+pub fn without_mock_test() {
+  function.identity("world")
+  |> should.equal("world")
 }
