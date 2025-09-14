@@ -1,5 +1,5 @@
 name = "mockth"
-version = "1.0.0"
+version = "2.0.0"
 description = "Erlang modules mocking library for Gleam"
 licences = ["Apache-2.0"]
 repository = { type = "github", user = "bondiano", repo = "mockth" }
