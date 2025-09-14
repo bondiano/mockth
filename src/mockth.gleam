@@ -114,12 +114,13 @@ pub fn history(module: String) -> Result(List(History), MockError) {
     let module = atom.to_string(module)
     let function = atom.to_string(function)
 
-    History(pid: pid, module: module, function: function, arguments: arguments)
+    History(pid:, module:, function:, arguments:)
   })
   |> Ok
 }
 
 /// Utility function to set up mocks with the `use` sugar.
+///
 /// ```gleam
 ///  pub fn with_mock_test() {
 ///   use mock <- mockth.with_mock(
@@ -138,8 +139,8 @@ pub fn history(module: String) -> Result(List(History), MockError) {
 pub fn with_mock(
   module module: String,
   function function: String,
-  replacement fun: a,
-  testcase f: fn(String) -> b,
+  replacement fun: fun,
+  testcase f: fn(String) -> anything,
 ) {
   let assert Ok(_) = expect(module, function, fun)
 
