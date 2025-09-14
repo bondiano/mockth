@@ -10,5 +10,5 @@ target = "erlang"
 [dependencies]
 gleam_stdlib = ">= 0.52.0 and < 1.0.0"
 meck = "1.0.0"
-gleam_erlang = ">= 0.33.0 and < 1.0.0"
+gleam_erlang = ">= 1.0.0 and < 2.0.0"
 gleeunit = ">= 1.2.0 and < 2.0.0"

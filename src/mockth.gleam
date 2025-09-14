@@ -4,7 +4,6 @@ import gleam/dynamic.{type Dynamic}
 import gleam/erlang/atom.{type Atom}
 import gleam/erlang/process.{type Pid}
 import gleam/list
-import gleam/result
 import gleeunit/should
 
 pub type History {
@@ -42,7 +41,7 @@ pub fn expect(
   function function: String,
   with fun: fun,
 ) -> Result(Bool, MockError) {
-  use #(module, function) <- result.then(load_expect_atoms(module, function))
+  let #(module, function) = load_expect_atoms(module, function)
 
   do_expect(module, function, fun)
   |> is_ok_atom()
@@ -63,10 +62,8 @@ fn do_validate(module: Atom) -> Bool
 /// - When you called a function with the wrong number of arguments (undef)
 /// - When you called an undefined function (undef)
 pub fn validate(module module: String) -> Bool {
-  case to_module_atom(module) {
-    Ok(module) -> do_validate(module)
-    Error(_) -> False
-  }
+  let mod = atom.create(module)
+  do_validate(mod)
 }
 
 @external(erlang, "meck", "unload")
@@ -85,12 +82,9 @@ fn do_unload(module: Atom) -> Atom
 /// Unload a mocked module or a list of mocked modules.
 /// This will purge and delete the module(s) from the Erlang virtual machine. If the mocked module(s) replaced an existing module, this module will still be in the Erlang load path and can be loaded manually or when called.
 pub fn unload(module: String) -> Result(Bool, MockError) {
-  module
-  |> to_module_atom
-  |> result.then(fn(module) {
-    do_unload(module)
-    |> is_ok_atom()
-  })
+  atom.create(module)
+  |> do_unload()
+  |> is_ok_atom()
 }
 
 @external(erlang, "meck", "mocked")
@@ -111,27 +105,18 @@ fn do_history(module: Atom) -> List(#(Pid, Mfa, result))
 /// Returns the history of calls to the mocked module.
 /// Don't support exception handling.
 pub fn history(module: String) -> Result(List(History), MockError) {
-  module
-  |> to_module_atom
-  |> result.map(fn(module) { do_history(module) })
-  |> result.then(fn(histories) {
-    histories
-    |> list.map(fn(histoy) {
-      let #(pid, mfa, _result) = histoy
-      let #(module, function, arguments) = mfa
+  atom.create(module)
+  |> do_history()
+  |> list.map(fn(histoy) {
+    let #(pid, mfa, _result) = histoy
+    let #(module, function, arguments) = mfa
 
-      let module = atom.to_string(module)
-      let function = atom.to_string(function)
+    let module = atom.to_string(module)
+    let function = atom.to_string(function)
 
-      History(
-        pid: pid,
-        module: module,
-        function: function,
-        arguments: arguments,
-      )
-    })
-    |> Ok
+    History(pid: pid, module: module, function: function, arguments: arguments)
   })
+  |> Ok
 }
 
 /// Utility function to set up mocks with the `use` sugar.
@@ -176,33 +161,16 @@ fn module_atoms_to_strings(module_atoms: List(Atom)) -> List(String) {
 }
 
 fn is_ok_atom(a: Atom) -> Result(Bool, MockError) {
-  let ok = atom.from_string("ok")
-  case ok {
-    Ok(ok) ->
-      case ok == a {
-        True -> Ok(True)
-        False -> Error(NoExpectError)
-      }
-    Error(_) -> Error(NoExpectError)
+  let ok = atom.create("ok")
+  case ok == a {
+    True -> Ok(True)
+    False -> Error(NoExpectError)
   }
 }
 
-fn load_expect_atoms(
-  module: String,
-  function: String,
-) -> Result(#(Atom, Atom), MockError) {
-  use module <- result.then(to_module_atom(module))
-  use function <- result.map(to_function_atom(function))
+fn load_expect_atoms(module: String, function: String) -> #(Atom, Atom) {
+  let module = atom.create(module)
+  let function = atom.create(function)
 
   #(module, function)
-}
-
-fn to_function_atom(function: String) -> Result(Atom, MockError) {
-  atom.from_string(function)
-  |> result.map_error(fn(_) { NoFunctionError(function) })
-}
-
-fn to_module_atom(module: String) -> Result(Atom, MockError) {
-  atom.from_string(module)
-  |> result.map_error(fn(_) { NoModuleError(module) })
 }
